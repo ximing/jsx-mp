@@ -1,0 +1,13 @@
+dist
+/node_modules
+.cache
+/packages/*/node_modules
+*.log
+*.cache
+.DS_Store
+_book
+.idea
+lib
+t.js
+tt.js
+test.js

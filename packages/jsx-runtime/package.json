@@ -1,0 +1,50 @@
+{
+  "name": "@yeanzhi/jsx-runtime",
+  "version": "1.0.0",
+  "description": "jsx-runtime",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/NervJS/taro.git"
+  },
+  "main": "index.js",
+  "files": [
+    "src",
+    "lib"
+  ],
+  "scripts": {
+    "test:cov": "jest --coverage && npm run lint",
+    "test": "jest",
+    "dev": "tsc -w --pretty",
+    "lint": "tslint",
+    "build": "tsc"
+  },
+  "author": "O2Team",
+  "license": "MIT",
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.tsx?$": "ts-jest"
+    },
+    "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
+    "moduleFileExtensions": [
+      "ts",
+      "tsx",
+      "js",
+      "jsx",
+      "json",
+      "node"
+    ],
+    "testPathIgnorePatterns": [
+      "node_modules",
+      "utils"
+    ]
+  },
+  "dependencies": {
+
+  },
+  "devDependencies": {
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
