@@ -34,17 +34,17 @@ export default class Index {
     render() {
         return (
             <View>
-                <Text>
+                <text>
                     Hello
                     {this.state.abc}
                     {this.state.passToChild}
-                </Text>
-                <View>{this.state.bizId}</View>
-                <BitcTag type="danger">取消订单</BitcTag>
-                <Text onClick={this.onMyEvent}>sss</Text>
-                <View>
+                </text>
+                <view>{this.state.bizId}</view>
+                <bit-tag type="danger">取消订单</bit-tag>
+                <text onClick={this.onMyEvent}>sss</text>
+                <view>
                     <Button bindtap={this.onMyEvent}>abc</Button>
-                </View>
+                </view>
             </View>
         );
     }
