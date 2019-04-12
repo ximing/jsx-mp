@@ -20,7 +20,7 @@ const baseOptions: Options = {
 import { View, Text, Button } from '@tarojs/components';
 
 export default class Index {
-    state = { abc: 'abc', passToChild: 123 };
+    data = { abc: 'abc', passToChild: 123 };
 
     onMyEvent = (evt) => {
         console.log('sssss', evt);
@@ -36,10 +36,10 @@ export default class Index {
             <View>
                 <text>
                     Hello
-                    {this.state.abc}
-                    {this.state.passToChild}
+                    {this.data.abc}
+                    {this.data.passToChild}
                 </text>
-                <view>{this.state.bizId}</view>
+                <view>{this.data.bizId}</view>
                 <bit-tag type="danger">取消订单</bit-tag>
                 <text onClick={this.onMyEvent}>sss</text>
                 <view>

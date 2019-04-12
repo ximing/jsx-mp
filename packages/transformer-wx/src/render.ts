@@ -592,7 +592,7 @@ export class RenderParser {
         if (isBlockIfStatement(ifStatement, blockStatement)) {
           const { test, alternate, consequent } = ifStatement.node
           // blockStatement.node.body.push(t.returnStatement(
-          //   t.memberExpression(t.thisExpression(), t.identifier('state'))
+          //   t.memberExpression(t.thisExpression(), t.identifier('data'))
           // ))
           if (alternate === blockStatement.node) {
             throw codeFrameError(parentNode.loc, '不必要的 else 分支，请遵从 ESLint consistent-return: https://eslint.org/docs/rules/consistent-return')
