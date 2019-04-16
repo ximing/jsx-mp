@@ -25,25 +25,25 @@ type ClassMethodsMap = Map<string, NodePath<t.ClassMethod | t.ClassProperty>>
 
 function buildConstructor () {
   const ctor = t.classMethod(
-      'constructor',
-      t.identifier('constructor'),
-      [t.identifier('props')],
-      t.blockStatement([
-        t.expressionStatement(
-            t.callExpression(t.identifier('super'), [
-              t.identifier('props')
-            ])
-        )
-      ])
+    'constructor',
+    t.identifier('constructor'),
+    [t.identifier('props')],
+    t.blockStatement([
+      t.expressionStatement(
+        t.callExpression(t.identifier('super'), [
+          t.identifier('props')
+        ])
+      )
+    ])
   )
   return ctor
 }
 
 function processThisPropsFnMemberProperties (
-    member: t.MemberExpression,
-    path: NodePath<t.CallExpression>,
-    args: Array<t.Expression | t.SpreadElement>,
-    binded: boolean
+  member: t.MemberExpression,
+  path: NodePath<t.CallExpression>,
+  args: Array<t.Expression | t.SpreadElement>,
+  binded: boolean
 ) {
   const propertyArray: string[] = []
   function traverseMember (member: t.MemberExpression) {
@@ -56,29 +56,29 @@ function processThisPropsFnMemberProperties (
 
     if (t.isMemberExpression(object)) {
       if (t.isThisExpression(object.object) &&
-          t.isIdentifier(object.property) &&
-          object.property.name === 'props'
+        t.isIdentifier(object.property) &&
+        object.property.name === 'props'
       ) {
         if (Adapters.alipay === Adapter.type) {
           if (binded) args.shift()
           path.replaceWith(
-              t.callExpression(
-                  t.memberExpression(t.thisExpression(), t.identifier('__triggerPropsFn')),
-                  [
-                    t.stringLiteral(propertyArray.reverse().join('.')),
-                    t.arrayExpression(args)
-                  ]
-              )
+            t.callExpression(
+              t.memberExpression(t.thisExpression(), t.identifier('__triggerPropsFn')),
+              [
+                t.stringLiteral(propertyArray.reverse().join('.')),
+                t.arrayExpression(args)
+              ]
+            )
           )
-        } else {
+        } else if (Adapters.weapp !== Adapter.type && Adapters.swan !== Adapter.type && Adapters.tt !== Adapter.type) {
           path.replaceWith(
-              t.callExpression(
-                  t.memberExpression(t.thisExpression(), t.identifier('__triggerPropsFn')),
-                  [t.stringLiteral(propertyArray.reverse().join('.')), t.callExpression(
-                      t.memberExpression(t.arrayExpression([t.nullLiteral()]), t.identifier('concat')),
-                      [t.arrayExpression(args)]
-                  )]
-              )
+            t.callExpression(
+              t.memberExpression(t.thisExpression(), t.identifier('__triggerPropsFn')),
+              [t.stringLiteral(propertyArray.reverse().join('.')), t.callExpression(
+                t.memberExpression(t.arrayExpression([t.nullLiteral()]), t.identifier('concat')),
+                [t.arrayExpression(args)]
+              )]
+            )
           )
         }
       }
@@ -130,9 +130,9 @@ class Transformer {
   private anonymousFuncCounter = incrementId()
 
   constructor (
-      path: NodePath<t.ClassDeclaration>,
-      sourcePath: string,
-      componentProperies: string[]
+    path: NodePath<t.ClassDeclaration>,
+    sourcePath: string,
+    componentProperies: string[]
   ) {
     this.classPath = path
     this.sourcePath = sourcePath
@@ -171,27 +171,27 @@ class Transformer {
     const objExpr = this.refs.map(ref => {
       return t.objectExpression([
         t.objectProperty(
-            t.identifier('type'),
-            t.stringLiteral(ref.type)
+          t.identifier('type'),
+          t.stringLiteral(ref.type)
         ),
         t.objectProperty(
-            t.identifier('id'),
-            t.stringLiteral(ref.id)
+          t.identifier('id'),
+          t.stringLiteral(ref.id)
         ),
         t.objectProperty(
-            t.identifier('refName'),
-            t.stringLiteral(ref.refName || '')
+          t.identifier('refName'),
+          t.stringLiteral(ref.refName || '')
         ),
         t.objectProperty(
-            t.identifier('fn'),
-            ref.fn ? ref.fn : t.nullLiteral()
+          t.identifier('fn'),
+          ref.fn ? ref.fn : t.nullLiteral()
         )
       ])
     })
 
     this.classPath.node.body.body.push(t.classProperty(
-        t.identifier('$$refs'),
-        t.arrayExpression(objExpr)
+      t.identifier('$$refs'),
+      t.arrayExpression(objExpr)
     ))
   }
 
@@ -226,7 +226,7 @@ class Transformer {
               throw codeFrameError(path.node, '在循环中使用 ref 必须暴露循环的第二个参数 `index`')
             }
             attrs.push(t.jSXAttribute(t.jSXIdentifier('id'), t.jSXExpressionContainer(
-                t.binaryExpression('+', t.stringLiteral(id), indexId)
+              t.binaryExpression('+', t.stringLiteral(id), indexId)
             )))
           } else {
             attrs.push(t.jSXAttribute(t.jSXIdentifier('id'), t.stringLiteral(id)))
@@ -297,6 +297,7 @@ class Transformer {
               ReturnStatement (returnPath) {
                 const arg = returnPath.node.argument
                 const ifStem = returnPath.findParent(p => p.isIfStatement())
+                // tslint:disable-next-line: strict-type-predicates
                 if (ifStem && ifStem.isIfStatement() && arg === null) {
                   const consequent = ifStem.get('consequent')
                   if (consequent.isBlockStatement() && consequent.node.body.includes(returnPath.node)) {
@@ -310,11 +311,11 @@ class Transformer {
             path.traverse({
               AssignmentExpression (p) {
                 if (
-                    t.isMemberExpression(p.node.left) &&
-                    t.isThisExpression(p.node.left.object) &&
-                    t.isIdentifier(p.node.left.property) &&
-                    p.node.left.property.name === 'data' &&
-                    t.isObjectExpression(p.node.right)
+                  t.isMemberExpression(p.node.left) &&
+                  t.isThisExpression(p.node.left.object) &&
+                  t.isIdentifier(p.node.left.property) &&
+                  p.node.left.property.name === 'data' &&
+                  t.isObjectExpression(p.node.right)
                 ) {
                   const properties = p.node.right.properties
                   properties.forEach(p => {
@@ -366,9 +367,9 @@ class Transformer {
           MemberExpression (path) {
             const sibling = path.getSibling('property')
             if (
-                path.get('object').isThisExpression() &&
-                (path.get('property').isIdentifier({ name: 'props' }) || path.get('property').isIdentifier({ name: 'data' })) &&
-                sibling.isIdentifier()
+              path.get('object').isThisExpression() &&
+              (path.get('property').isIdentifier({ name: 'props' }) || path.get('property').isIdentifier({ name: 'data' })) &&
+              sibling.isIdentifier()
             ) {
               if (!isFunctionProp) {
                 self.usedState.add(sibling.node.name)
@@ -382,12 +383,12 @@ class Transformer {
         const calleeExpr = expression.get('callee')
         const parentPath = path.parentPath
         if (
-            hasComplexExpression(expression) &&
-            !isFunctionProp &&
-            !(calleeExpr &&
-                calleeExpr.isMemberExpression() &&
-                calleeExpr.get('object').isMemberExpression() &&
-                calleeExpr.get('property').isIdentifier({ name: 'bind' })) // is not bind
+          hasComplexExpression(expression) &&
+          !isFunctionProp &&
+          !(calleeExpr &&
+            calleeExpr.isMemberExpression() &&
+            calleeExpr.get('object').isMemberExpression() &&
+            calleeExpr.get('property').isIdentifier({ name: 'bind' })) // is not bind
         ) {
           generateAnonymousState(scope, expression, self.jsxReferencedIdentifiers)
         } else {
@@ -403,12 +404,29 @@ class Transformer {
         if (!t.isJSXIdentifier(key)) {
           return
         }
+
+        const jsx = path.findParent(p => p.isJSXOpeningElement()) as NodePath<t.JSXOpeningElement>
+
         if (t.isJSXIdentifier(key) && key.name.startsWith('on') && t.isJSXExpressionContainer(value)) {
           const expr = value.expression
-          if (t.isCallExpression(expr) && t.isMemberExpression(expr.callee) && t.isIdentifier(expr.callee.property, { name: 'bind' })) {
-            self.buildPropsAnonymousFunc(attr, expr, true)
+          if (
+            t.isCallExpression(expr) &&
+            t.isMemberExpression(expr.callee) &&
+            t.isIdentifier(expr.callee.property, { name: 'bind' })
+          ) {
+            if (
+              (Adapter.type !== Adapters.weapp && Adapter.type !== Adapters.swan && Adapters.tt !== Adapter.type) ||
+              (t.isJSXIdentifier(jsx.node.name) && DEFAULT_Component_SET.has(jsx.node.name.name))
+            ) {
+              self.buildPropsAnonymousFunc(attr, expr, true)
+            }
           } else if (t.isMemberExpression(expr)) {
-            self.buildPropsAnonymousFunc(attr, expr as any, false)
+            if (
+              (Adapter.type !== Adapters.weapp && Adapter.type !== Adapters.swan && Adapters.tt !== Adapter.type) ||
+              (t.isJSXIdentifier(jsx.node.name) && DEFAULT_Component_SET.has(jsx.node.name.name))
+            ) {
+              self.buildPropsAnonymousFunc(attr, expr as any, false)
+            }
           } else if (t.isArrowFunctionExpression(expr)) {
             const exprPath = attr.get('value.expression')
             const stemParent = path.getStatementParent()
@@ -424,52 +442,84 @@ class Transformer {
                 index = t.identifier('__index' + counter)
                 safeSet(loopCallExpr, 'node.arguments[0].params[1]', index)
               }
-              classBody.push(t.classProperty(t.identifier(anonymousFuncName + 'Array'), t.arrayExpression([])))
+              classBody.push(t.classProperty(t.identifier(anonymousFuncName + 'Map'), t.objectExpression([])))
+              const indexKey = stemParent.scope.generateUid('indexKey')
+              // tslint:disable-next-line: no-inner-declarations
+              function findParentLoopCallExprIndices (callExpr: NodePath<t.CallExpression>) {
+                const indices: Set<t.Identifier> = new Set([])
+                // tslint:disable-next-line: no-conditional-assignment
+                while (callExpr = callExpr.findParent(p => isArrayMapCallExpression(p) && p !== callExpr) as NodePath<t.CallExpression>) {
+                  let index = safeGet(callExpr, 'node.arguments[0].params[1]')
+                  if (!t.isIdentifier(index)) {
+                    index = t.identifier('__index' + counter)
+                    safeSet(callExpr, 'node.arguments[0].params[1]', index)
+                  }
+                  indices.add(index)
+                }
+                return indices
+              }
+              const indices = [...findParentLoopCallExprIndices(loopCallExpr)].reverse()
+              const indexKeyDecl = t.variableDeclaration('const', [t.variableDeclarator(
+                t.identifier(indexKey),
+                indices.length === 0
+                  ? t.binaryExpression('+', t.stringLiteral(createRandomLetters(5)), index)
+                  : t.templateLiteral(
+                    [
+                      t.templateElement({ raw: createRandomLetters(5) }),
+                      ...indices.map(() => t.templateElement({ raw: '-' })),
+                      t.templateElement({ raw: '' })
+                    ],
+                    [
+                      ...indices.map(i => t.identifier(i.name)),
+                      index
+                    ]
+                  )
+              )])
+              stemParent.insertBefore(indexKeyDecl)
               const arrayFunc = t.memberExpression(
-                  t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName + 'Array')),
-                  t.identifier(index.name),
-                  true
+                t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName + 'Map')),
+                t.identifier(indexKey),
+                true
               )
               classBody.push(
-                  t.classMethod('method', t.identifier(anonymousFuncName), [t.identifier(index.name), t.identifier('e')], t.blockStatement([
-                    isCatch ? t.expressionStatement(t.callExpression(t.memberExpression(t.identifier('e'), t.identifier('stopPropagation')), [])) : t.emptyStatement(),
-                    t.expressionStatement(t.logicalExpression('&&', arrayFunc, t.callExpression(arrayFunc, [t.identifier('e')])))
-                  ]))
+                t.classMethod('method', t.identifier(anonymousFuncName), [t.identifier(indexKey), t.identifier('e')], t.blockStatement([
+                  isCatch ? t.expressionStatement(t.callExpression(t.memberExpression(t.identifier('e'), t.identifier('stopPropagation')), [])) : t.emptyStatement(),
+                  t.returnStatement(t.logicalExpression('&&', arrayFunc, t.callExpression(arrayFunc, [t.identifier('e')])))
+                ]))
               )
               exprPath.replaceWith(t.callExpression(
-                  t.memberExpression(
-                      t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName)),
-                      t.identifier('bind')
-                  ),
-                  [t.thisExpression(), t.identifier(index.name)]
+                t.memberExpression(
+                  t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName)),
+                  t.identifier('bind')
+                ),
+                [t.thisExpression(), t.identifier(indexKey)]
               ))
               stemParent.insertBefore(
-                  t.expressionStatement(t.assignmentExpression(
-                      '=',
-                      arrayFunc,
-                      expr
-                  ))
+                t.expressionStatement(t.assignmentExpression(
+                  '=',
+                  arrayFunc,
+                  expr
+                ))
               )
             } else {
               classBody.push(
-                  t.classMethod('method', t.identifier(anonymousFuncName), [t.identifier('e')], t.blockStatement([
-                    isCatch ? t.expressionStatement(t.callExpression(t.memberExpression(t.identifier('e'), t.identifier('stopPropagation')), [])) : t.emptyStatement()
-                  ]))
+                t.classMethod('method', t.identifier(anonymousFuncName), [t.identifier('e')], t.blockStatement([
+                  isCatch ? t.expressionStatement(t.callExpression(t.memberExpression(t.identifier('e'), t.identifier('stopPropagation')), [])) : t.emptyStatement()
+                ]))
               )
               exprPath.replaceWith(t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName)))
               stemParent.insertBefore(
-                  t.expressionStatement(t.assignmentExpression(
-                      '=',
-                      t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName)),
-                      expr
-                  ))
+                t.expressionStatement(t.assignmentExpression(
+                  '=',
+                  t.memberExpression(t.thisExpression(), t.identifier(anonymousFuncName)),
+                  expr
+                ))
               )
             }
           } else {
             throw codeFrameError(path.node, '组件事件传参只能在使用匿名箭头函数，或使用类作用域下的确切引用(this.handleXX || this.props.handleXX)，或使用 bind。')
           }
         }
-        const jsx = path.findParent(p => p.isJSXOpeningElement()) as NodePath<t.JSXOpeningElement>
         if (!jsx) return
         const jsxName = jsx.node.name
         if (!t.isJSXIdentifier(jsxName)) return
@@ -480,9 +530,9 @@ class Transformer {
       JSXElement (path) {
         const id = path.node.openingElement.name
         if (
-            t.isJSXIdentifier(id) &&
-            !DEFAULT_Component_SET.has(id.name) &&
-            self.moduleNames.indexOf(id.name) !== -1
+          t.isJSXIdentifier(id) &&
+          !DEFAULT_Component_SET.has(id.name) &&
+          self.moduleNames.indexOf(id.name) !== -1
         ) {
           const name = id.name
           const binding = self.classPath.scope.getBinding(name)
@@ -506,9 +556,9 @@ class Transformer {
         const object = path.get('object')
         const property = path.get('property')
         if (
-            !(
-                object.isThisExpression() && property.isIdentifier({ name: 'props' })
-            )
+          !(
+            object.isThisExpression() && property.isIdentifier({ name: 'props' })
+          )
         ) {
           return
         }
@@ -568,15 +618,17 @@ class Transformer {
     const { code } = generate(expr)
     if (code.startsWith('this.props')) {
       const methodName = findMethodName(expr)
-      const hasMethodName = this.anonymousMethod.has(methodName) || !methodName
+      const uniqueMethodName = `${methodName}${String(isBind)}`
+      const hasMethodName = this.anonymousMethod.has(uniqueMethodName) || !methodName
       const funcName = hasMethodName
-          ? this.anonymousMethod.get(methodName)!
-          // 测试时使用1个稳定的 uniqueID 便于测试，实际使用5个英文字母，否则小程序不支持
-          : process.env.NODE_ENV === 'test' ? uniqueId('funPrivate') : `funPrivate${createRandomLetters(5)}`
-      this.anonymousMethod.set(methodName, funcName)
+        ? this.anonymousMethod.get(uniqueMethodName)!
+        // 测试时使用1个稳定的 uniqueID 便于测试，实际使用5个英文字母，否则小程序不支持
+        : process.env.NODE_ENV === 'test' ? uniqueId('funPrivate') : `funPrivate${createRandomLetters(5)}`
+      this.anonymousMethod.set(uniqueMethodName, funcName)
+
       const newVal = isBind
-          ? t.callExpression(t.memberExpression(t.memberExpression(t.thisExpression(), t.identifier(funcName)), t.identifier('bind')), expr.arguments || [])
-          : t.memberExpression(t.thisExpression(), t.identifier(funcName))
+        ? t.callExpression(t.memberExpression(t.memberExpression(t.thisExpression(), t.identifier(funcName)), t.identifier('bind')), expr.arguments || [])
+        : t.memberExpression(t.thisExpression(), t.identifier(funcName))
       attr.get('value.expression').replaceWith(newVal)
       this.methods.set(funcName, null as any)
       this.componentProperies.add(methodName)
@@ -590,12 +642,34 @@ class Transformer {
       if (methodName.startsWith('on')) {
         this.componentProperies.add(`__fn_${methodName}`)
       }
-      const method = t.classMethod('method', t.identifier(funcName), [], t.blockStatement([
-        t.expressionStatement(t.callExpression(
+      const method = (Adapters.weapp !== Adapter.type && Adapters.swan !== Adapter.type && Adapters.tt !== Adapter.type) ?
+        t.classMethod('method', t.identifier(funcName), [], t.blockStatement([
+          t.expressionStatement(t.callExpression(
             t.memberExpression(t.thisExpression(), t.identifier('__triggerPropsFn')),
             [t.stringLiteral(methodName), t.arrayExpression([t.spreadElement(t.identifier('arguments'))])]
-        ))
-      ]))
+          ))
+        ])) :
+        t.classMethod('method', t.identifier(funcName), [], t.blockStatement([
+          t.returnStatement(t.callExpression(
+            t.memberExpression(
+              t.memberExpression(
+                t.memberExpression(t.thisExpression(), t.identifier('props')),
+                t.identifier(methodName)
+              ),
+              t.identifier('apply')
+            ),
+            [
+              isBind ? t.identifier('this') : t.identifier('undefined'),
+              t.callExpression(
+                t.memberExpression(
+                  t.memberExpression(t.memberExpression(t.identifier('Array'), t.identifier('prototype')), t.identifier('slice')),
+                  t.identifier('call')
+                ),
+                [t.identifier('arguments'), t.numericLiteral(1)]
+              )
+            ]
+          ))
+        ]))
       this.classPath.node.body.body = this.classPath.node.body.body.concat(method)
     }
   }
@@ -726,18 +800,18 @@ class Transformer {
   parseRender () {
     if (this.renderMethod) {
       this.result.template = this.result.template
-          + new RenderParser(
-              this.renderMethod,
-              this.methods,
-              this.initState,
-              this.jsxReferencedIdentifiers,
-              this.usedState,
-              this.loopStateName,
-              this.customComponentNames,
-              this.customComponentData,
-              this.componentProperies,
-              this.loopRefs
-          ).outputTemplate
+        + new RenderParser(
+          this.renderMethod,
+          this.methods,
+          this.initState,
+          this.jsxReferencedIdentifiers,
+          this.usedState,
+          this.loopStateName,
+          this.customComponentNames,
+          this.customComponentData,
+          this.componentProperies,
+          this.loopRefs
+        ).outputTemplate
     }
   }
 
