@@ -1,6 +1,6 @@
 {
-  "name": "wxmp-jsx-runtime",
-  "version": "1.0.0",
+  "name": "mp-jsx",
+  "version": "0.0.1",
   "description": "mp-jsx-runtime",
   "repository": {
     "type": "git",
@@ -9,9 +9,7 @@
   "main": "index.js",
   "files": [
     "dist",
-    "src",
-    "index.js",
-    "router.js"
+    "src"
   ],
   "scripts": {
     "test:cov": "jest --coverage && npm run lint",

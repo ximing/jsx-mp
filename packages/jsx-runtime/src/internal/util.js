@@ -26,15 +26,15 @@ export function objClone(jsonObj) {
             buf[i] = objClone(jsonObj[i]);
         }
         return buf;
-    }
-    if (isPlainObject(jsonObj)) {
+    } else if (isPlainObject(jsonObj)) {
         buf = {};
         for (const k in jsonObj) {
             buf[k] = objClone(jsonObj[k]);
         }
         return buf;
+    } else {
+        return jsonObj;
     }
-    return jsonObj;
 }
 
 export function getPrototype(obj) {
@@ -102,35 +102,39 @@ function diffArrToPath(to, from, res = {}, keyPrev = '') {
             continue;
         } else if (typeof toItem !== typeof fromItem) {
             res[targetKey] = toItem;
-        } else if (typeof toItem !== 'object') {
-            res[targetKey] = toItem;
         } else {
-            const arrTo = isArray(toItem);
-            const arrFrom = isArray(fromItem);
-            if (arrTo !== arrFrom) {
-                res[targetKey] = toItem;
-            } else if (arrTo && arrFrom) {
-                if (toItem.length < fromItem.length) {
-                    res[targetKey] = toItem;
-                } else {
-                    // 数组
-                    diffArrToPath(toItem, fromItem, res, `${targetKey}`);
-                }
-            } else if (!toItem || !fromItem || keyList(toItem).length < keyList(fromItem).length) {
+            if (typeof toItem !== 'object') {
                 res[targetKey] = toItem;
             } else {
-                // 对象
-                let shouldDiffObject = true;
-                Object.keys(fromItem).some((key) => {
-                    if (typeof toItem[key] === 'undefined') {
-                        shouldDiffObject = false;
-                        return true;
-                    }
-                });
-                if (shouldDiffObject) {
-                    diffObjToPath(toItem, fromItem, res, `${targetKey}.`);
-                } else {
+                const arrTo = isArray(toItem);
+                const arrFrom = isArray(fromItem);
+                if (arrTo !== arrFrom) {
                     res[targetKey] = toItem;
+                } else if (arrTo && arrFrom) {
+                    if (toItem.length < fromItem.length) {
+                        res[targetKey] = toItem;
+                    } else {
+                        // 数组
+                        diffArrToPath(toItem, fromItem, res, `${targetKey}`);
+                    }
+                } else {
+                    if (!toItem || !fromItem || keyList(toItem).length < keyList(fromItem).length) {
+                        res[targetKey] = toItem;
+                    } else {
+                        // 对象
+                        let shouldDiffObject = true;
+                        Object.keys(fromItem).some((key) => {
+                            if (typeof toItem[key] === 'undefined') {
+                                shouldDiffObject = false;
+                                return true;
+                            }
+                        });
+                        if (shouldDiffObject) {
+                            diffObjToPath(toItem, fromItem, res, `${targetKey}.`);
+                        } else {
+                            res[targetKey] = toItem;
+                        }
+                    }
                 }
             }
         }
@@ -154,37 +158,39 @@ export function diffObjToPath(to, from, res = {}, keyPrev = '') {
             res[targetKey] = toItem;
         } else if (typeof toItem !== typeof fromItem) {
             res[targetKey] = toItem;
-        } else if (typeof toItem !== 'object') {
-            res[targetKey] = toItem;
         } else {
-            const arrTo = isArray(toItem);
-            const arrFrom = isArray(fromItem);
-            if (arrTo !== arrFrom) {
+            if (typeof toItem !== 'object') {
                 res[targetKey] = toItem;
-            } else if (arrTo && arrFrom) {
-                if (toItem.length < fromItem.length) {
-                    res[targetKey] = toItem;
-                } else {
-                    // 数组
-                    diffArrToPath(toItem, fromItem, res, `${targetKey}`);
-                }
             } else {
-                // null
-                if (!toItem || !fromItem) {
+                const arrTo = isArray(toItem);
+                const arrFrom = isArray(fromItem);
+                if (arrTo !== arrFrom) {
                     res[targetKey] = toItem;
-                } else {
-                    // 对象
-                    let shouldDiffObject = true;
-                    Object.keys(fromItem).some((key) => {
-                        if (typeof toItem[key] === 'undefined') {
-                            shouldDiffObject = false;
-                            return true;
-                        }
-                    });
-                    if (shouldDiffObject) {
-                        diffObjToPath(toItem, fromItem, res, `${targetKey}.`);
-                    } else {
+                } else if (arrTo && arrFrom) {
+                    if (toItem.length < fromItem.length) {
                         res[targetKey] = toItem;
+                    } else {
+                        // 数组
+                        diffArrToPath(toItem, fromItem, res, `${targetKey}`);
+                    }
+                } else {
+                    // null
+                    if (!toItem || !fromItem) {
+                        res[targetKey] = toItem;
+                    } else {
+                        // 对象
+                        let shouldDiffObject = true;
+                        Object.keys(fromItem).some((key) => {
+                            if (typeof toItem[key] === 'undefined') {
+                                shouldDiffObject = false;
+                                return true;
+                            }
+                        });
+                        if (shouldDiffObject) {
+                            diffObjToPath(toItem, fromItem, res, `${targetKey}.`);
+                        } else {
+                            res[targetKey] = toItem;
+                        }
                     }
                 }
             }
@@ -196,7 +202,7 @@ export function diffObjToPath(to, from, res = {}, keyPrev = '') {
 export function queryToJson(str) {
     const dec = decodeURIComponent;
     const qp = str.split('&');
-    const ret = {};
+    let ret = {};
     let name;
     let val;
     for (let i = 0, l = qp.length, item; i < l; ++i) {
@@ -246,4 +252,28 @@ export function getElementById(component, id, type) {
     if (res) return res;
 
     return null;
+}
+
+let id = 0;
+export function genCompid() {
+    return String(id++);
+}
+
+export function genLoopCompid(scope, variableName, loops) {
+    if (scope && scope.data) {
+        let data = scope.data;
+        for (let len = loops.length, i = 0; i < len; i++) {
+            const { indexId, name } = loops[i];
+            if (data[name] && data[name][indexId]) {
+                data = data[name][indexId];
+            } else {
+                return genCompid();
+            }
+        }
+        if (data[variableName]) {
+            return data[variableName];
+        } else {
+            return genCompid();
+        }
+    }
 }
