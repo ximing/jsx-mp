@@ -6,10 +6,10 @@ type ReactFragment = {} | ReactNodeArray;
 type ReactNode = ReactChild | ReactFragment | boolean | null | undefined;
 type ReactInstance = any;
 
-export = MC;
-export as namespace MC;
+export = MP;
+export as namespace MP;
 
-declare namespace MC {
+declare namespace MP {
     function createComponent(com: any): any;
     function createPage(page: any): any;
 
