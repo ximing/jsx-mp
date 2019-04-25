@@ -1,6 +1,7 @@
-import { diffObjToPath, noop } from './internal/util';
+import { diffObjToPath, noop, isEmptyObject, shakeFnFromObject } from './internal/util';
 import { filterProps } from './filter';
 import propsManager from './internal/propsManager';
+import { internal_safe_get as safeGet, internal_safe_set as safeSet } from './internal/index';
 
 function generateObserver(key, ComponentClass, context) {
     function observer(value) {
@@ -13,10 +14,9 @@ function generateObserver(key, ComponentClass, context) {
                 [key]: value
             })
         );
-        if (this.__isReady) {
-            const oldData = Object.assign({}, this.data);
-            const newData = context._createData(oldData, nextProps);
-            const dataDiff = diffObjToPath(newData, this.data);
+        const newData = doUpdate.call(this, {}, nextProps);
+        const dataDiff = diffObjToPath(newData, this.data);
+        if (Object.keys(dataDiff).length) {
             this.__nativeSetData(dataDiff);
         }
         this.props = nextProps;
@@ -48,9 +48,39 @@ function bindProperties(weappComponentConf, ComponentClass) {
     };
 }
 
+// 根据 $usedState 过滤掉需要传送给 view层的数据，只传递需要的
+function doUpdate(nextData = {}, nextProps = {}) {
+    const { props, data, $usedState } = this;
+    let _nextData = Object.assign(
+        {},
+        props,
+        data,
+        this._createData(Object.assign({}, data, nextData), Object.assign({}, props, nextProps))
+    );
+    if ($usedState && $usedState.length) {
+        const _data = {};
+        $usedState.forEach((key) => {
+            let val = safeGet(_nextData, key);
+            if (typeof val === 'undefined') {
+                return;
+            }
+            if (typeof val === 'object') {
+                if (isEmptyObject(val)) return safeSet(_data, key, val);
+                val = shakeFnFromObject(val);
+                // 避免筛选完 Fn 后产生了空对象还去渲染
+                if (!isEmptyObject(val)) safeSet(_data, key, val);
+            } else {
+                safeSet(_data, key, val);
+            }
+        });
+        _nextData = _data;
+    }
+    return _nextData;
+}
+
 function setData(data, fn = noop) {
     try {
-        const newData = this._createData(Object.assign({}, this.data, data));
+        const newData = doUpdate.call(this, data);
         const dataDiff = diffObjToPath(newData, this.data);
         this.__nativeSetData(dataDiff, fn);
     } catch (err) {
@@ -60,7 +90,6 @@ function setData(data, fn = noop) {
 }
 
 export function createComponent(ComponentClass) {
-    const initData = {};
     const componentInstance = new ComponentClass();
     try {
         componentInstance._constructor && componentInstance._constructor();
@@ -69,13 +98,13 @@ export function createComponent(ComponentClass) {
             {},
             componentInstance.props
         );
-        componentInstance.data = componentInstance._createData() || componentInstance.data;
+        componentInstance.data = doUpdate.call(componentInstance);
+        componentInstance.data.$taroCompReady = true;
     } catch (err) {
         console.warn(`[JSX warn] 请给组件提供一个 \`defaultProps\` 以提高初次渲染性能！`);
         console.warn(err);
     }
-    const { created, ready, props, data } = componentInstance;
-    componentInstance.data = Object.assign({}, initData, props, data);
+    const { created, ready } = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.created = function(...args) {
         this.__nativeSetData = this.setData;
@@ -141,17 +170,16 @@ export function createComponent(ComponentClass) {
 }
 
 export function createPage(ComponentClass) {
-    const initData = {};
     const componentInstance = new ComponentClass();
     try {
         componentInstance._constructor && componentInstance._constructor();
-        componentInstance.data = componentInstance._createData() || componentInstance.data;
+        componentInstance.data = doUpdate.call(componentInstance);
+        componentInstance.data.$taroCompReady = true;
     } catch (err) {
         console.warn(`[JSX warn] 请给组件提供一个 \`defaultProps\` 以提高初次渲染性能！`);
         console.warn(err);
     }
-    const { onLoad, onReady, props, data } = componentInstance;
-    componentInstance.data = Object.assign({}, initData, props, data);
+    const { onLoad, onReady } = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.onLoad = function(...args) {
         try {
