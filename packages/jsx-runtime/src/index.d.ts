@@ -16,13 +16,13 @@ declare namespace MP {
     class Component<P, D> {
         constructor(props?: Readonly<P>);
         readonly props: Readonly<P> & Readonly<{ children?: ReactNode }>;
-        setData<K extends keyof D>(
+        setState<K extends keyof D>(
             data:
                 | ((prevData: Readonly<D>, props: Readonly<P>) => Pick<D, K> | D | null)
                 | (Pick<D, K> | D | null),
             callback?: () => void
         ): void;
-        data: Readonly<D>;
+        state: Readonly<D>;
         render(): ReactNode;
         refs: {
             [key: string]: ReactInstance;
@@ -30,11 +30,11 @@ declare namespace MP {
     }
     class Page<D> {
         constructor();
-        setData<K extends keyof D>(
+        setState<K extends keyof D>(
             data: ((prevData: Readonly<D>) => Pick<D, K> | D | null) | (Pick<D, K> | D | null),
             callback?: () => void
         ): void;
-        data: Readonly<D>;
+        state: Readonly<D>;
         render(): ReactNode;
         refs: {
             [key: string]: ReactInstance;

@@ -1,11 +1,9 @@
 import { diffObjToPath, noop, isEmptyObject, shakeFnFromObject } from './internal/util';
 import { filterProps } from './filter';
-import propsManager from './internal/propsManager';
 import { internal_safe_get as safeGet, internal_safe_set as safeSet } from './internal/index';
 
 function generateObserver(key, ComponentClass, context) {
-    function observer(value) {
-        // const compid = this.data.compid;
+    return function(value) {
         const nextProps = filterProps(
             ComponentClass.defaultProps,
             // propsManager.map[compid] || {},
@@ -15,48 +13,62 @@ function generateObserver(key, ComponentClass, context) {
             })
         );
         const newData = doUpdate.call(this, {}, nextProps);
-        const dataDiff = diffObjToPath(newData, this.data);
+        const dataDiff = diffObjToPath(newData, this.data, nextProps);
+        Object.keys(ComponentClass.defaultProps).forEach((key) => {
+            // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData自己的key
+            delete dataDiff[key];
+        });
         if (Object.keys(dataDiff).length) {
-            this.__nativeSetData(dataDiff);
+            this.setData(dataDiff);
         }
-        this.props = nextProps;
-    }
-    return observer;
+    };
 }
 
 function bindProperties(weappComponentConf, ComponentClass) {
     weappComponentConf.properties = ComponentClass.properties || {};
     weappComponentConf.props = weappComponentConf.props || {};
     Object.keys(weappComponentConf.props).forEach((key) => {
-        if (key === 'compid') {
-            throw new Error('业务方不能使用 compid 字段作为属性的key');
-        }
         weappComponentConf.properties[key] = {
             type: null,
             value: weappComponentConf.props[key],
             observer: generateObserver(key, ComponentClass, weappComponentConf)
         };
     });
-    // taro jsx 编译器注入的变量
-    weappComponentConf.properties.compid = {
-        type: null,
-        value: null,
-        observer(value) {
-            console.error('properties.compid', value);
-            this.data.compid = value;
-        }
-    };
 }
 
+function copyProperty(componentInstance, ComponentClass) {
+    Object.getOwnPropertyNames(ComponentClass.prototype).forEach((key) => {
+        if (['constructor', 'state', 'data', 'props'].indexOf(key) < 0)
+            componentInstance[key] = ComponentClass.prototype[key];
+    });
+}
+
+function setState(data, fn = noop) {
+    try {
+        const newData = doUpdate.call(this, data);
+        const dataDiff = diffObjToPath(newData, this.data);
+        if (Object.keys(dataDiff).length) {
+            this.setData(dataDiff, fn);
+        } else {
+            fn.call(this, this.state);
+        }
+    } catch (err) {
+        console.error('--> setState error', err);
+        throw err;
+    }
+}
 // 根据 $usedState 过滤掉需要传送给 view层的数据，只传递需要的
-function doUpdate(nextData = {}, nextProps = {}) {
-    const { props, data, $usedState } = this;
+function doUpdate(nextState = {}, nextProps = {}) {
+    const { props, state, $usedState } = this;
     let _nextData = Object.assign(
         {},
         props,
-        data,
-        this._createData(Object.assign({}, data, nextData), Object.assign({}, props, nextProps))
+        state,
+        this._createData(Object.assign({}, state, nextState), Object.assign({}, props, nextProps))
     );
+    this.state = Object.assign({}, state, nextState);
+    this.props = Object.assign({}, props, nextProps);
+
     if ($usedState && $usedState.length) {
         const _data = {};
         $usedState.forEach((key) => {
@@ -78,17 +90,6 @@ function doUpdate(nextData = {}, nextProps = {}) {
     return _nextData;
 }
 
-function setData(data, fn = noop) {
-    try {
-        const newData = doUpdate.call(this, data);
-        const dataDiff = diffObjToPath(newData, this.data);
-        this.__nativeSetData(dataDiff, fn);
-    } catch (err) {
-        console.error('--> setData error', err);
-        throw err;
-    }
-}
-
 export function createComponent(ComponentClass) {
     const componentInstance = new ComponentClass();
     try {
@@ -98,6 +99,8 @@ export function createComponent(ComponentClass) {
             {},
             componentInstance.props
         );
+        // props 进行 observer监听
+        bindProperties(componentInstance, ComponentClass);
         componentInstance.data = doUpdate.call(componentInstance);
         componentInstance.data.$taroCompReady = true;
     } catch (err) {
@@ -107,14 +110,10 @@ export function createComponent(ComponentClass) {
     const { created, ready } = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.created = function(...args) {
-        this.__nativeSetData = this.setData;
+        this.props = componentInstance.props;
+        this.state = componentInstance.state;
+        this.setState = setState.bind(this);
         componentInstance.__init(this);
-        Object.defineProperty(this, 'setData', {
-            value: setData.bind(this),
-            configurable: true,
-            enumerable: true,
-            writable: false
-        });
         created && created.apply(this, args);
     };
     componentInstance.ready = function(...args) {
@@ -125,10 +124,8 @@ export function createComponent(ComponentClass) {
         componentInstance.methods = {};
     }
     // 将原型链上不可枚举的方法赋值过来
-    Object.getOwnPropertyNames(ComponentClass.prototype).forEach((key) => {
-        if (['constructor', 'data', 'props'].indexOf(key) < 0)
-            componentInstance[key] = ComponentClass.prototype[key];
-    });
+    copyProperty(componentInstance, ComponentClass);
+
     // 将对象中的业务函数放到methods上面
     Object.keys(componentInstance).forEach((key) => {
         if (
@@ -136,6 +133,7 @@ export function createComponent(ComponentClass) {
                 'constructor',
                 'methods',
                 'props',
+                'state',
                 'data',
                 'created',
                 'attached',
@@ -164,8 +162,6 @@ export function createComponent(ComponentClass) {
             }
         }
     });
-    // props 进行 observer监听
-    bindProperties(componentInstance, ComponentClass);
     return componentInstance;
 }
 
@@ -183,14 +179,8 @@ export function createPage(ComponentClass) {
     componentInstance.__isReady = false;
     componentInstance.onLoad = function(...args) {
         try {
-            this.__nativeSetData = this.setData;
+            this.setState = setState.bind(this);
             componentInstance.__init(this);
-            Object.defineProperty(this, 'setData', {
-                value: setData.bind(this),
-                configurable: true,
-                enumerable: true,
-                writable: false
-            });
         } catch (e) {
             console.error(e);
         }
@@ -201,10 +191,6 @@ export function createPage(ComponentClass) {
         onReady && onReady.apply(this, args);
     };
     // 将原型链上不可枚举的方法赋值过来
-    Object.getOwnPropertyNames(ComponentClass.prototype).forEach((key) => {
-        if (['constructor', 'data', 'props'].indexOf(key) < 0)
-            componentInstance[key] = ComponentClass.prototype[key];
-    });
-
+    copyProperty(componentInstance, ComponentClass);
     return componentInstance;
 }
