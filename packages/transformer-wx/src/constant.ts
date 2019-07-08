@@ -46,8 +46,13 @@ export const DEFAULT_Component_SET = new Set<string>([
   'Ad',
   'Block',
   'Import',
-  'OfficialAccount'
+  'OfficialAccount',
+  'Template'
 ])
+
+// tslint:disable-next-line:variable-name
+export const DEFAULT_Component_SET_COPY = new Set<string>([])
+DEFAULT_Component_SET.forEach((c) => DEFAULT_Component_SET_COPY.add(c))
 
 export const INTERNAL_SAFE_GET = 'internal_safe_get'
 
@@ -73,7 +78,11 @@ export const GEN_COMP_ID = 'genCompid'
 
 export const GEN_LOOP_COMPID = 'genLoopCompid'
 
-export const LOOP_STATE = '$loopState'
+export const CLASS_COMPONENT_UID = '_$uid'
+
+export let LOOP_STATE = '$loopState'
+
+export const setLoopState = (s: string) => LOOP_STATE = s
 
 export const COMPID = '$compid'
 
@@ -81,7 +90,9 @@ export let LOOP_ORIGINAL = '$original'
 
 export const setLoopOriginal = (s: string) => LOOP_ORIGINAL = s
 
-export const LOOP_CALLEE = '$anonymousCallee_'
+export let LOOP_CALLEE = '$anonymousCallee_'
+
+export let setLoopCallee = (s: string) => LOOP_CALLEE = s
 
 export const SPECIAL_COMPONENT_PROPS = new Map<string, Set<string>>()
 
@@ -126,3 +137,25 @@ TRANSFORM_COMPONENT_PROPS.set(Adapters.alipay, {
 })
 
 export const lessThanSignPlacehold = '__LESS_THAN_SIGN_PLACEHOLDER__'
+
+export let FN_PREFIX = '__fn_'
+
+export const setFnPrefix = (s: string) => FN_PREFIX = s
+
+export const quickappComponentName = new Set([
+  'Swiper',
+  'Image',
+  'Progress',
+  // 'Text',
+  'Input',
+  'Label',
+  'Picker',
+  'Slider',
+  'Switch',
+  'Textarea',
+  'Video',
+  'Camera',
+  'Canvas',
+  'Map',
+  'Button'
+])

@@ -7,9 +7,34 @@ import { cloneDeep } from 'lodash'
 import * as fs from 'fs'
 import * as path from 'path'
 import { buildBlockElement } from './jsx'
-import { Adapter } from './adapter'
+import { Adapter, Adapters } from './adapter'
 import { transformOptions } from './options'
 const template = require('babel-template')
+
+export function replaceJSXTextWithTextComponent (path: NodePath<t.JSXText | t.JSXExpressionContainer>) {
+  const parent = path.findParent(p => p.isJSXElement())
+  if (parent && parent.isJSXElement() && t.isJSXIdentifier(parent.node.openingElement.name) && parent.node.openingElement.name.name !== 'Text') {
+    path.replaceWith(t.jSXElement(
+      t.jSXOpeningElement(t.jSXIdentifier('Text'), []),
+      t.jSXClosingElement(t.jSXIdentifier('Text')),
+      [path.isJSXText() ? t.jSXText(path.node.value) : path.node]
+    ))
+  }
+}
+
+export function isDerivedFromProps (scope: Scope, bindingName: string) {
+  const binding = scope.getBinding(bindingName)
+  if (binding && binding.path.isVariableDeclarator()) {
+    const init = binding.path.get('init')
+    if (init.isMemberExpression()) {
+      const { object, property } = init.node
+      if (t.isThisExpression(object) && t.isIdentifier(property, { name: 'props' })) {
+        return true
+      }
+    }
+  }
+  return false
+}
 
 export const incrementId = () => {
   let id = 0
@@ -121,7 +146,7 @@ export function findMethodName (expression: t.Expression): string {
   ) {
     methodName = expression.callee.object.property.name
   } else {
-    throw codeFrameError(expression.loc, '当 props 为事件时(props name 以 `on` 开头)，只能传入一个 this 作用域下的函数。')
+    throw codeFrameError(expression.loc, '当 props 为事件时(props name 以 `on` 开头)，只能传入一个 this 作用域下的函数。')
   }
   return methodName
 }
@@ -211,6 +236,11 @@ export function generateAnonymousState (
               }
             })
             variableName = newId.name
+            if (Adapter.type === Adapters.quickapp && variableName.startsWith('_$')) {
+              const newVarName = variableName.slice(2)
+              scope.rename(variableName, newVarName)
+              variableName = newVarName
+            }
             refIds.add(t.identifier(variableName))
             blockStatement.scope.rename(id.name, newId.name)
             path.parentPath.replaceWith(
@@ -461,7 +491,7 @@ export function hasComplexExpression (path: NodePath<t.Node>) {
       if (
         jsxElement &&
         object.isThisExpression() &&
-        property.isIdentifier({ name: 'data' }) &&
+        property.isIdentifier({ name: 'state' }) &&
         parentPath.isMemberExpression() &&
         parentPath.parentPath.isMemberExpression()
       ) {

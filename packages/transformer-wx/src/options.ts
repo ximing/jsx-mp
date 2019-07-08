@@ -1,18 +1,22 @@
 import { Adapters } from './adapter'
 import { eslintValidation } from './eslint'
 import { TransformOptions } from 'babel-core'
+import { functionalComponent } from './functional'
+import { isTestEnv } from './env'
 
 export interface Options {
   isRoot?: boolean,
   isApp: boolean,
   outputPath: string,
   sourcePath: string,
+  sourceDir?: string,
   code: string,
   isTyped: boolean,
   isNormal?: boolean,
   env?: object,
   adapter?: Adapters,
-  jsxAttributeNameReplace?: Object
+  jsxAttributeNameReplace?: Object,
+  rootProps?: object
 }
 
 export const transformOptions: Options = {} as any
@@ -49,8 +53,9 @@ export const buildBabelTransformOptions: () => TransformOptions = () => {
       require('babel-plugin-transform-do-expressions'),
       require('babel-plugin-transform-export-extensions'),
       require('babel-plugin-transform-flow-strip-types'),
+      functionalComponent,
       [require('babel-plugin-transform-define').default, transformOptions.env]
     ].concat(process.env.ESLINT === 'false' || transformOptions.isNormal || transformOptions.isTyped ? [] : eslintValidation)
-    .concat((process.env.NODE_ENV === 'test') ? [] : require('babel-plugin-remove-dead-code').default)
+    .concat((isTestEnv) ? [] : require('babel-plugin-remove-dead-code').default)
   }
 }

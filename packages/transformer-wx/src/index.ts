@@ -4,7 +4,15 @@ import { prettyPrint } from 'html'
 import { transform as parse } from 'babel-core'
 import * as ts from 'typescript'
 import { Transformer } from './class'
-import { setting, findFirstIdentifierFromMemberExpression, isContainJSXElement, codeFrameError, isArrayMapCallExpression, getSuperClassCode } from './utils'
+import {
+  setting,
+  findFirstIdentifierFromMemberExpression,
+  isContainJSXElement,
+  codeFrameError,
+  isArrayMapCallExpression,
+  replaceJSXTextWithTextComponent,
+  getSuperClassCode
+} from './utils'
 import * as t from 'babel-types'
 import {
   DEFAULT_Component_SET,
@@ -20,13 +28,18 @@ import {
   GEL_ELEMENT_BY_ID,
   lessThanSignPlacehold,
   COMPONENTS_PACKAGE_NAME,
+  quickappComponentName,
+  setFnPrefix,
+  setLoopCallee,
+  setLoopState,
   PROPS_MANAGER,
   GEN_COMP_ID,
   GEN_LOOP_COMPID
 } from './constant'
 import { Adapters, setAdapter, Adapter } from './adapter'
 import { Options, setTransformOptions, buildBabelTransformOptions } from './options'
-import { get as safeGet } from 'lodash'
+import { get as safeGet, cloneDeep } from 'lodash'
+import { isTestEnv } from './env'
 
 const template = require('babel-template')
 
@@ -81,6 +94,32 @@ function resetTSClassProperty (body: (t.ClassMethod | t.ClassProperty)[]) {
           }
           return true
         })
+      }
+    }
+  }
+}
+
+function handleClosureJSXFunc (jsx: NodePath<t.JSXElement>, mainClass: NodePath<t.ClassDeclaration>) {
+  // 在 ./functional.ts 会把 FunctionExpression 转化为 arrowFunctionExpr
+  // 所以我们这里只处理一种情况
+  const arrowFunc = jsx.findParent(p => p.isArrowFunctionExpression())
+  if (arrowFunc && arrowFunc.isArrowFunctionExpression()) {
+    const parentPath = arrowFunc.parentPath
+    if (parentPath.isVariableDeclarator()) {
+      const id = parentPath.node.id
+      if (t.isIdentifier(id) && id.name.startsWith('render')) {
+        const funcName = `renderClosure${id.name.slice(6, id.name.length)}`
+        mainClass.node.body.body.push(
+          t.classProperty(
+            t.identifier(funcName),
+            cloneDeep(arrowFunc.node)
+          )
+        )
+        parentPath.scope.rename(id.name, funcName)
+        arrowFunc.replaceWith(t.memberExpression(
+          t.thisExpression(),
+          t.identifier(funcName)
+        ))
       }
     }
   }
@@ -158,9 +197,17 @@ interface TransformResult extends Result {
 export default function transform (options: Options): TransformResult {
   if (options.adapter) {
     setAdapter(options.adapter)
+    if (Adapter.type === Adapters.quickapp) {
+      DEFAULT_Component_SET.clear()
+      DEFAULT_Component_SET.add('div')
+      DEFAULT_Component_SET.add('Text')
+      setFnPrefix('prv-fn-')
+    }
   }
-  if (Adapter.type === Adapters.swan) {
+  if (Adapter.type === Adapters.swan || Adapter.type === Adapters.quickapp) {
     setLoopOriginal('privateOriginal')
+    setLoopCallee('anonymousCallee_')
+    setLoopState('loopState')
   }
   THIRD_PARTY_COMPONENTS.clear()
   const code = options.isTyped
@@ -201,6 +248,32 @@ export default function transform (options: Options): TransformResult {
   let renderMethod!: NodePath<t.ClassMethod>
   let isImportTaro = false
   traverse(ast, {
+    Program: {
+      exit (path: NodePath<t.Program>) {
+        for (const stem of path.node.body) {
+          if (t.isImportDeclaration(stem)) {
+            if (stem.source.value === TARO_PACKAGE_NAME) {
+              const specs = stem.specifiers
+              if (specs.some(s => t.isImportDefaultSpecifier(s) && s.local.name === 'Taro')) {
+                continue
+              }
+              specs.unshift(t.importDefaultSpecifier(t.identifier('Taro')))
+            }
+          }
+        }
+      }
+    },
+    JSXText (path) {
+      if (Adapter.type !== Adapters.quickapp) {
+        return
+      }
+      const value = path.node.value
+      if (!value.trim()) {
+        return
+      }
+
+      replaceJSXTextWithTextComponent(path)
+    },
     TemplateLiteral (path) {
       const nodes: t.Expression[] = []
       const { quasis, expressions } = path.node
@@ -243,7 +316,8 @@ export default function transform (options: Options): TransformResult {
             code: superClass.code,
             isTyped: true,
             sourcePath: superClass.sourcePath,
-            outputPath: superClass.sourcePath
+            outputPath: superClass.sourcePath,
+            sourceDir: options.sourceDir
           }).componentProperies
         } catch (error) {
           //
@@ -408,6 +482,7 @@ export default function transform (options: Options): TransformResult {
           ])
         }
       }
+      handleClosureJSXFunc(path, mainClass)
     },
     JSXOpeningElement (path) {
       const { name } = path.node.name as t.JSXIdentifier
@@ -420,6 +495,9 @@ export default function transform (options: Options): TransformResult {
             throw codeFrameError(bindingPath.parentPath.node, `内置组件名: '${name}' 只能从 ${COMPONENTS_PACKAGE_NAME} 引入。`)
           }
         }
+      }
+      if (name === 'View' && Adapter.type === Adapters.quickapp) {
+        path.node.name = t.jSXIdentifier('div')
       }
       if (name === 'Provider') {
         const modules = path.scope.getAllBindings('module')
@@ -517,6 +595,18 @@ export default function transform (options: Options): TransformResult {
         importSources.add(source)
       }
       const names: string[] = []
+      if (source === COMPONENTS_PACKAGE_NAME && Adapters.quickapp === Adapter.type) {
+        path.node.specifiers.forEach((s) => {
+          if (t.isImportSpecifier(s)) {
+            const originalName = s.imported.name
+            if (quickappComponentName.has(originalName)) {
+              const importedName = `Taro${originalName}`
+              s.imported.name = importedName
+              s.local.name = importedName
+            }
+          }
+        })
+      }
       if (source === TARO_PACKAGE_NAME) {
         isImportTaro = true
         path.node.specifiers.push(
@@ -601,14 +691,14 @@ export default function transform (options: Options): TransformResult {
     )
     return { ast } as TransformResult
   }
-  result = new Transformer(mainClass, options.sourcePath, componentProperies).result
+  result = new Transformer(mainClass, options.sourcePath, componentProperies, options.sourceDir!).result
   result.code = generate(ast).code
   result.ast = ast
   const lessThanSignReg = new RegExp(lessThanSignPlacehold, 'g')
   result.compressedTemplate = result.template
   result.template = prettyPrint(result.template, {
     max_char: 0,
-    unformatted: process.env.NODE_ENV === 'test' ? [] : ['text']
+    unformatted: isTestEnv ? [] : ['text']
   })
   result.template = result.template.replace(lessThanSignReg, '<')
   result.imageSrcs = Array.from(imageSource)
