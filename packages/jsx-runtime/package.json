@@ -1,6 +1,6 @@
 {
   "name": "mp-jsx",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "mp-jsx-runtime",
   "repository": {
     "type": "git",
@@ -8,6 +8,7 @@
   },
   "main": "lib/index.js",
   "files": [
+    "index.d.ts",
     "lib",
     "src"
   ],

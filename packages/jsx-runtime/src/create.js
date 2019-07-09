@@ -36,9 +36,9 @@ function bindProperties(weappComponentConf, ComponentClass) {
     });
 }
 
-function copyProperty(componentInstance, ComponentClass) {
+function copyProperty(componentInstance, ComponentClass, othersProps = []) {
     Object.getOwnPropertyNames(ComponentClass.prototype).forEach((key) => {
-        if (['constructor', 'state', 'data', 'props'].indexOf(key) < 0)
+        if (['constructor', 'state', 'data', 'props', ...othersProps].indexOf(key) < 0)
             componentInstance[key] = ComponentClass.prototype[key];
     });
 }
@@ -124,7 +124,7 @@ export function createComponent(ComponentClass) {
         componentInstance.methods = {};
     }
     // 将原型链上不可枚举的方法赋值过来
-    copyProperty(componentInstance, ComponentClass);
+    copyProperty(componentInstance, ComponentClass, ['created', 'ready']);
 
     // 将对象中的业务函数放到methods上面
     Object.keys(componentInstance).forEach((key) => {
@@ -191,6 +191,6 @@ export function createPage(ComponentClass) {
         onReady && onReady.apply(this, args);
     };
     // 将原型链上不可枚举的方法赋值过来
-    copyProperty(componentInstance, ComponentClass);
+    copyProperty(componentInstance, ComponentClass, ['onLoad', 'onReady']);
     return componentInstance;
 }
