@@ -1,17 +1,14 @@
 {
   "name": "mp-jsx",
-  "version": "1.2.2",
+  "version": "1.2.7",
   "description": "mp-jsx-runtime",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/NervJS/taro.git"
   },
+  "typings": "index.d.ts",
   "main": "lib/index.js",
-  "files": [
-    "index.d.ts",
-    "lib",
-    "src"
-  ],
+  "files": ["index.d.ts", "lib", "src", "typings"],
   "scripts": {
     "test:cov": "jest --coverage && npm run lint",
     "test": "jest",
@@ -27,18 +24,8 @@
       "^.+\\.tsx?$": "ts-jest"
     },
     "testRegex": "(/__tests__/.*|(\\.|/)(test|spec))\\.(jsx?|tsx?)$",
-    "moduleFileExtensions": [
-      "ts",
-      "tsx",
-      "js",
-      "jsx",
-      "json",
-      "node"
-    ],
-    "testPathIgnorePatterns": [
-      "node_modules",
-      "utils"
-    ]
+    "moduleFileExtensions": ["ts", "tsx", "js", "jsx", "json", "node"],
+    "testPathIgnorePatterns": ["node_modules", "utils"]
   },
   "dependencies": {
     "@babel/runtime": "^7.3.1",
