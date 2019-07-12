@@ -47,7 +47,7 @@ interface IShareAppMessageOption {
    *
    * 最低基础库： `1.2.4`
    */
-  from: "button" | "menu" | string;
+  from: 'button' | 'menu' | string;
   /** 如果 `from` 值是 `button`，则 `target` 是触发这次转发事件的 `button`，否则为 `undefined`
    *
    * 最低基础库： `1.2.4` */
@@ -102,7 +102,7 @@ declare namespace MP {
     relations?: {
       [key: string]: {
         /** 目标组件的相对关系 */
-        type: "parent" | "child" | "ancestor" | "descendant";
+        type: 'parent' | 'child' | 'ancestor' | 'descendant';
         /** 关系生命周期函数，当关系被建立在页面节点树中时触发，触发时机在组件attached生命周期之后 */
         linked?: (this: Component<P, S>) => any;
         /** 关系生命周期函数，当关系在页面节点树中发生改变时触发，触发时机在组件moved生命周期之后 */
@@ -125,11 +125,7 @@ declare namespace MP {
     hasBehavior(behavior: any): boolean;
 
     /** 触发事件 */
-    triggerEvent(
-        name: string,
-        detail: any,
-        options?: TriggerEventOptions
-    ): void;
+    triggerEvent(name: string, detail: any, options?: TriggerEventOptions): void;
 
     /** 也可以使用 wx.createSelectorQuery */
     createSelectorQuery(): wx.SelectorQuery;
@@ -139,6 +135,8 @@ declare namespace MP {
     selectAllComponents(selector: string): Component<P, S>[];
     /** 获取所有这个关系对应的所有关联节点, 参见 组件间关系 https://mp.weixin.qq.com/debug/wxadoc/dev/framework/custom-component/relations.html */
     getRelationNodes(relationKey: string): any[];
+    /** 组件属性更新时回调 还没render**/
+    receiveProps(this: Component<P, S>, nextProps?: P): any;
 
     [key: string]: any;
   }
@@ -146,9 +144,7 @@ declare namespace MP {
   class Page<S> {
     constructor();
     setState<K extends keyof S>(
-        data:
-            | ((prevData: Readonly<S>) => Pick<S, K> | S | null)
-            | (Pick<S, K> | S | null),
+        data: ((prevData: Readonly<S>) => Pick<S, K> | S | null) | (Pick<S, K> | S | null),
         callback?: () => void
     ): void;
     state: Readonly<S>;
@@ -231,3 +227,4 @@ declare namespace MP {
     ): void;
   }
 }
+

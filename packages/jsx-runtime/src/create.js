@@ -12,6 +12,7 @@ function generateObserver(key, ComponentClass, context) {
                 [key]: value
             })
         );
+        this.receiveProps(nextProps);
         const newData = doUpdate.call(this, {}, nextProps);
         const dataDiff = diffObjToPath(newData, this.data, nextProps);
         Object.keys(ComponentClass.defaultProps).forEach((key) => {
@@ -121,7 +122,9 @@ export function createComponent(ComponentClass) {
         ready && ready.apply(this, args);
     };
     if (!componentInstance.methods) {
-        componentInstance.methods = {};
+        componentInstance.methods = {
+            receiveProps() {}
+        };
     }
     // 将原型链上不可枚举的方法赋值过来
     copyProperty(componentInstance, ComponentClass, ['created', 'ready']);
