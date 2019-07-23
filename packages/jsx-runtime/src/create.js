@@ -48,6 +48,10 @@ function setState(data, fn = noop) {
     try {
         const newData = doUpdate.call(this, data);
         const dataDiff = diffObjToPath(newData, this.data);
+        this.props&&Object.keys(this.props).forEach((key) => {
+            // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData props相关的key
+            delete dataDiff[key];
+        });
         if (Object.keys(dataDiff).length) {
             this.setData(dataDiff, fn);
         } else {
@@ -61,15 +65,9 @@ function setState(data, fn = noop) {
 // 根据 $usedState 过滤掉需要传送给 view层的数据，只传递需要的
 function doUpdate(nextState = {}, nextProps = {}) {
     const { props, state, $usedState } = this;
-    let _nextData = Object.assign(
-        {},
-        props,
-        state,
-        this._createData(Object.assign({}, state, nextState), Object.assign({}, props, nextProps))
-    );
     this.state = Object.assign({}, state, nextState);
     this.props = Object.assign({}, props, nextProps);
-
+    let _nextData = Object.assign({}, this._createData());
     if ($usedState && $usedState.length) {
         const _data = {};
         $usedState.forEach((key) => {
