@@ -108,10 +108,10 @@ export function createComponent(ComponentClass) {
     }
     const { created, ready } = componentInstance;
     componentInstance.__isReady = false;
+    componentInstance.setState = setState;
     componentInstance.created = function(...args) {
         this.props = componentInstance.props;
         this.state = componentInstance.state;
-        this.setState = setState.bind(this);
         componentInstance.__init(this);
         created && created.apply(this, args);
     };
@@ -178,9 +178,9 @@ export function createPage(ComponentClass) {
     }
     const { onLoad, onReady } = componentInstance;
     componentInstance.__isReady = false;
+    componentInstance.setState = setState;
     componentInstance.onLoad = function(...args) {
         try {
-            this.setState = setState.bind(this);
             componentInstance.__init(this);
         } catch (e) {
             console.error(e);
