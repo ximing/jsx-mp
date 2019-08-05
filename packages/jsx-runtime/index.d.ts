@@ -225,6 +225,9 @@ declare namespace MP {
         /** tab 点击参数 */
         options?: ITabItemTapOption
     ): void;
+
+    selectComponent(selector: string): Component<any,any>;
+
   }
 }
 
