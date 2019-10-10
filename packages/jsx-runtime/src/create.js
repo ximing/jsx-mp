@@ -1,9 +1,9 @@
-import { diffObjToPath, noop, isEmptyObject, shakeFnFromObject } from './internal/util';
-import { filterProps } from './filter';
-import { internal_safe_get as safeGet, internal_safe_set as safeSet } from './internal/index';
+import {diffObjToPath, noop, isEmptyObject, shakeFnFromObject} from './internal/util';
+import {filterProps} from './filter';
+import {internal_safe_get as safeGet, internal_safe_set as safeSet} from './internal/index';
 
 function generateObserver(key, ComponentClass, context) {
-    return function(value) {
+    return function (value) {
         const nextProps = filterProps(
             ComponentClass.defaultProps,
             // propsManager.map[compid] || {},
@@ -48,7 +48,7 @@ function setState(data, fn = noop) {
     try {
         const newData = doUpdate.call(this, data);
         const dataDiff = diffObjToPath(newData, this.data);
-        this.props&&Object.keys(this.props).forEach((key) => {
+        this.props && Object.keys(this.props).forEach((key) => {
             // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData props相关的key
             delete dataDiff[key];
         });
@@ -62,9 +62,10 @@ function setState(data, fn = noop) {
         throw err;
     }
 }
+
 // 根据 $usedState 过滤掉需要传送给 view层的数据，只传递需要的
 function doUpdate(nextState = {}, nextProps = {}) {
-    const { props, state, $usedState } = this;
+    const {props, state, $usedState} = this;
     this.state = Object.assign({}, state, nextState);
     this.props = Object.assign({}, props, nextProps);
     let _nextData = Object.assign({}, this._createData());
@@ -106,22 +107,23 @@ export function createComponent(ComponentClass) {
         console.warn(`[JSX warn] 请给组件提供一个 \`defaultProps\` 以提高初次渲染性能！`);
         console.warn(err);
     }
-    const { created, ready } = componentInstance;
+    const {created, ready} = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.setState = setState;
-    componentInstance.created = function(...args) {
+    componentInstance.created = function (...args) {
         this.props = componentInstance.props;
         this.state = componentInstance.state;
-        componentInstance.__init(this);
+        componentInstance.__init(this, false);
         created && created.apply(this, args);
     };
-    componentInstance.ready = function(...args) {
+    componentInstance.ready = function (...args) {
         this.__isReady = true;
         ready && ready.apply(this, args);
     };
     if (!componentInstance.methods) {
         componentInstance.methods = {
-            receiveProps() {}
+            receiveProps() {
+            }
         };
     }
     // 将原型链上不可枚举的方法赋值过来
@@ -176,18 +178,18 @@ export function createPage(ComponentClass) {
         console.warn(`[JSX warn] 请给组件提供一个 \`defaultProps\` 以提高初次渲染性能！`);
         console.warn(err);
     }
-    const { onLoad, onReady } = componentInstance;
+    const {onLoad, onReady} = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.setState = setState;
-    componentInstance.onLoad = function(...args) {
+    componentInstance.onLoad = function (...args) {
         try {
-            componentInstance.__init(this);
+            componentInstance.__init(this, true);
         } catch (e) {
             console.error(e);
         }
         onLoad && onLoad.apply(this, args);
     };
-    componentInstance.onReady = function(...args) {
+    componentInstance.onReady = function (...args) {
         this.__isReady = true;
         onReady && onReady.apply(this, args);
     };
