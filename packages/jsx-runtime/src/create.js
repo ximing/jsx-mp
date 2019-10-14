@@ -14,7 +14,7 @@ function generateObserver(key, ComponentClass, context) {
         );
         this.receiveProps(nextProps);
         const newData = doUpdate.call(this, {}, nextProps);
-        const dataDiff = diffObjToPath(newData, this.data, nextProps);
+        const dataDiff = diffObjToPath(newData, this.data, {});
         // Object.keys(ComponentClass.defaultProps).forEach((key) => {
         //     // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData自己的key
         //     delete dataDiff[key];
