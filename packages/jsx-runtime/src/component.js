@@ -7,7 +7,7 @@ export default class JSXComponent {
     __init(scope, isPage) {
         if(!isPage){
             Object.keys(this).forEach(key=>{
-                if(!scope.hasOwnProperty(key) && typeof this[key] !== 'function'){
+                if(typeof scope[key] === 'undefined' && typeof this[key] !== 'function'){
                     scope[key] = this[key]
                 }
             })
