@@ -84,14 +84,16 @@ function doUpdate(nextState = {}, nextProps = {}) {
             if (typeof val === 'undefined') {
                 return;
             }
-            if (typeof val === 'object') {
-                if (isEmptyObject(val)) return safeSet(_data, key, val);
-                val = shakeFnFromObject(val);
-                // 避免筛选完 Fn 后产生了空对象还去渲染
-                if (!isEmptyObject(val)) safeSet(_data, key, val);
-            } else {
-                safeSet(_data, key, val);
-            }
+            safeSet(_data, key, val);
+            // 传递fn到 组件会丢失
+            // if (typeof val === 'object') {
+            //     if (isEmptyObject(val)) return safeSet(_data, key, val);
+            //     val = shakeFnFromObject(val);
+            //     // 避免筛选完 Fn 后产生了空对象还去渲染
+            //     if (!isEmptyObject(val)) safeSet(_data, key, val);
+            // } else {
+            //     safeSet(_data, key, val);
+            // }
         });
         _nextData = _data;
     }
