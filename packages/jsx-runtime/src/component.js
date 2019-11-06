@@ -12,6 +12,5 @@ export default class JSXComponent {
                 }
             })
         }
-        this.$scope = scope;
     }
 }
