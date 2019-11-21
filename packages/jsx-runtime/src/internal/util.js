@@ -77,9 +77,9 @@ export function shakeFnFromObject(obj) {
     } else if (isPlainObject(obj)) {
         newObj = {};
         for (const key in obj) {
-            if (isFunction(obj[key])) {
-                continue;
-            }
+            // if (isFunction(obj[key])) {
+            //     continue;
+            // }
             const ret = shakeFnFromObject(obj[key]);
             newObj[key] = ret;
         }
