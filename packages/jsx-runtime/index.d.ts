@@ -125,7 +125,7 @@ declare namespace MP {
     hasBehavior(behavior: any): boolean;
 
     /** 触发事件 */
-    triggerEvent(name: string, detail: any, options?: TriggerEventOptions): void;
+    triggerEvent(name: string, detail?: any, options?: TriggerEventOptions): void;
 
     /** 也可以使用 wx.createSelectorQuery */
     createSelectorQuery(): wx.SelectorQuery;
