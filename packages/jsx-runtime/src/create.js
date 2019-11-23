@@ -73,10 +73,10 @@ function setState(data, fn = noop) {
 
 // 根据 $usedState 过滤掉需要传送给 view层的数据，只传递需要的
 function doUpdate(nextState = {}, nextProps = {}) {
-    const {props, state, $usedState} = this;
+    const {props, state, $usedState, data} = this;
     this.state = Object.assign({}, state, nextState);
     this.props = Object.assign({}, props, nextProps);
-    let _nextData = Object.assign({}, this._createData());
+    let _nextData = Object.assign({}, data, this._createData());
     if ($usedState && $usedState.length) {
         const _data = {};
         $usedState.forEach((key) => {
