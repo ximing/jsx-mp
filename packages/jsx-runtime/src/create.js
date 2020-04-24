@@ -1,29 +1,28 @@
-import {diffObjToPath, noop, isEmptyObject, shakeFnFromObject} from './internal/util';
+import {diffObjToPath, noop, isEmptyObject, shakeFnFromObject,objClone} from './internal/util';
 import {filterProps} from './filter';
 import {internal_safe_get as safeGet, internal_safe_set as safeSet} from './internal/index';
+import {set} from './internal/safe-set';
 
 function generateObserver(key, ComponentClass, context) {
-    return function (value) {
+    return function (value,a,b) {
+        let _v = value;
+        if (Array.isArray(b) && b.length > 1) {
+            _v = set(objClone({ [key]: this.props[key] }), b, value)[key];
+        }
         const nextProps = filterProps(
             ComponentClass.defaultProps,
-            // propsManager.map[compid] || {},
-            {},
             Object.assign({}, this.props, {
-                [key]: value
+                [key]: _v
             })
         );
         this.receiveProps(nextProps);
         const newData = doUpdate.call(this, {}, nextProps);
-        const dataDiff = diffObjToPath(newData, this.data, {});
-        // Object.keys(ComponentClass.defaultProps).forEach((key) => {
-        //     // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData自己的key
-        //     delete dataDiff[key];
-        // });
-
+        const dataDiff = diffObjToPath(newData, this.data, {},'');
         // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData自己的key
         Object.keys(dataDiff).forEach((key) => {
-            const keys = key.split('.')
-            if (keys[0] && ComponentClass.defaultProps && ComponentClass.defaultProps.hasOwnProperty([keys[0]])) {
+            const keys = key.split('.');
+            const k = keys[0].replace(/\[\d+\]/,"");
+            if (k && ComponentClass.defaultProps && ComponentClass.defaultProps.hasOwnProperty(k)) {
                 delete dataDiff[key];
             }
         })
@@ -106,7 +105,6 @@ export function createComponent(ComponentClass) {
         componentInstance._constructor && componentInstance._constructor();
         componentInstance.props = filterProps(
             ComponentClass.defaultProps,
-            {},
             componentInstance.props
         );
         // props 进行 observer监听
