@@ -118,10 +118,10 @@ export function createComponent(ComponentClass) {
     const {created, ready} = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.setState = setState;
+    componentInstance.__doUpdate = doUpdate;
     componentInstance.created = function (...args) {
         this.props = componentInstance.props;
         this.state = componentInstance.state;
-        this.__doUpdate = doUpdate.bind(this);
         componentInstance.__init(this, false);
         created && created.apply(this, args);
     };
@@ -190,10 +190,10 @@ export function createPage(ComponentClass) {
     const {onLoad, onReady} = componentInstance;
     componentInstance.__isReady = false;
     componentInstance.setState = setState;
+    // 暴露给业务做一些更新的事情，比如metric埋点等，需要触发更新
+    componentInstance.__doUpdate = doUpdate;
     componentInstance.onLoad = function (...args) {
         try {
-            // 暴露给业务做一些更新的事情，比如metric埋点等，需要触发更新
-            this.__doUpdate = doUpdate.bind(this);
             componentInstance.__init(this, true);
         } catch (e) {
             console.error(e);
