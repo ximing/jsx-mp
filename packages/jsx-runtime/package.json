@@ -21,7 +21,7 @@
     "build": "export NODE_ENV=production && babel src --out-dir lib",
     "lint": "tslint"
   },
-  "author": "O2Team",
+  "author": "ximing",
   "license": "MIT",
   "jest": {
     "testEnvironment": "node",
