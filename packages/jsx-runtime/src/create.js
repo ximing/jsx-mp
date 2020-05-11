@@ -55,9 +55,14 @@ function setState(data, fn = noop) {
     try {
         const newData = doUpdate.call(this, data);
         const dataDiff = diffObjToPath(newData, this.data);
-        this.props && Object.keys(this.props).forEach((key) => {
-            // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData props相关的key
-            delete dataDiff[key];
+        this.props &&
+        Object.keys(dataDiff).forEach((key) => {
+            const keys = key.split('.');
+            const k = keys[0].replace(/\[\d+\]/, '');
+            if (k && this.props.hasOwnProperty(k)) {
+                // 这里只处理props变动导致的关联变动也就是 _createDate 返回的数据，而不关心其他变化，尤其不能setData props相关的key
+                delete dataDiff[key];
+            }
         });
         if (Object.keys(dataDiff).length) {
             this.setData(dataDiff, fn);
