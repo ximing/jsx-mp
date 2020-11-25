@@ -179,7 +179,11 @@ export function createComponent(ComponentClass) {
             }
         }
     });
-    return componentInstance;
+    return Object.keys(componentInstance).reduce(function(pre,cur){
+        pre[cur] = componentInstance[cur]
+        return pre
+    },{})
+    // return componentInstance;
 }
 
 export function createPage(ComponentClass) {
@@ -211,5 +215,9 @@ export function createPage(ComponentClass) {
     };
     // 将原型链上不可枚举的方法赋值过来
     copyProperty(componentInstance, ComponentClass, ['onLoad', 'onReady']);
-    return componentInstance;
+    return Object.keys(componentInstance).reduce(function(pre,cur){
+      pre[cur] = componentInstance[cur]
+      return pre
+    },{})
+    // return componentInstance;
 }
